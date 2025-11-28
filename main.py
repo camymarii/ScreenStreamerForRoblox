@@ -1,6 +1,3 @@
-from gevent import monkey
-monkey.patch_all(thread=False)
-
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 import threading
@@ -13,9 +10,9 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from flask import Flask, jsonify, request
+from werkzeug.serving import make_server
 from PIL import Image, ImageGrab, ImageTk
 import cv2
-from gevent.pywsgi import WSGIServer
 
 class ScreenShareConfig:
     """Configuration class for screen sharing settings"""
@@ -191,7 +188,7 @@ class ScreenShareServer:
                 return False
         
         try:
-            self.server = WSGIServer(('0.0.0.0', self.config.port), self.app, log=None)
+            self.server = make_server('0.0.0.0', self.config.port, self.app, threaded=True)
             self.running = True
             
             def run_server():
@@ -214,7 +211,7 @@ class ScreenShareServer:
     def stop(self):
         """Stop the server"""
         if self.server and self.running:
-            self.server.stop()
+            self.server.shutdown()
             self.running = False
             if self.cap:
                 self.cap.release()
