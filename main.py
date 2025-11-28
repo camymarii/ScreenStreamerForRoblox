@@ -1,3 +1,6 @@
+from gevent import monkey
+monkey.patch_all(thread=False)
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 import threading
@@ -7,6 +10,7 @@ import os
 import time
 import logging
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
 from flask import Flask, jsonify, request
 from PIL import Image, ImageGrab, ImageTk
@@ -71,6 +75,7 @@ class ScreenShareServer:
         self.cap = None
         self.request_count = 0
         self.last_request_time = None
+        self.executor = ThreadPoolExecutor(max_workers=2)
         
         self._setup_routes()
     
@@ -124,6 +129,10 @@ class ScreenShareServer:
         """Convert RGB to compressed hex format"""
         return f"{(rgb[0] >> 4):X}{(rgb[1] >> 4):X}{(rgb[2] >> 4):X}"
     
+    def _grab_screen(self):
+        """Capture screen in a separate thread to avoid blocking gevent"""
+        return ImageGrab.grab()
+    
     def _encode_frame(self, first_time, server_id, skip_frame):
         """Encode a frame for transmission"""
         if self.config.video_streaming and skip_frame == "1":
@@ -136,7 +145,9 @@ class ScreenShareServer:
         
         try:
             if not self.config.video_streaming:
-                pic = ImageGrab.grab().resize(
+                future = self.executor.submit(self._grab_screen)
+                screen = future.result(timeout=5)
+                pic = screen.resize(
                     (self.config.x_res, self.config.y_res),
                     Image.Resampling.BILINEAR
                 )
@@ -208,6 +219,8 @@ class ScreenShareServer:
             if self.cap:
                 self.cap.release()
                 self.cap = None
+            if self.executor:
+                self.executor.shutdown(wait=False)
             self.log("Server stopped")
             return True
         return False
