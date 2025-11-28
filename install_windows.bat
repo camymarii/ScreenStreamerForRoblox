@@ -9,16 +9,15 @@ echo Upgrading pip...
 python -m pip install --upgrade pip
 
 echo.
-echo Installing dependencies one by one...
+echo Installing dependencies (using pre-compiled binaries)...
 echo.
 
-:: Install numpy first (older version for compatibility)
+:: Install using only pre-compiled wheels (no Visual Studio needed)
 echo [1/5] Installing NumPy 1.26.4...
-python -m pip install numpy==1.26.4
+python -m pip install numpy==1.26.4 --only-binary :all:
 
-:: Install other dependencies
 echo [2/5] Installing Pillow...
-python -m pip install pillow
+python -m pip install pillow --only-binary :all:
 
 echo [3/5] Installing Flask...
 python -m pip install flask
@@ -27,13 +26,14 @@ echo [4/5] Installing Werkzeug...
 python -m pip install werkzeug
 
 echo [5/5] Installing OpenCV...
-python -m pip install opencv-python
+python -m pip install opencv-python --only-binary :all:
 
 echo.
 echo ==========================================
 echo   Installation Complete!
 echo ==========================================
 echo.
-echo To run the app, type: python main.py
+echo To run the app, double-click run_app.bat
+echo Or type: python main.py
 echo.
 pause
